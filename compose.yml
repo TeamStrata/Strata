@@ -1,0 +1,10 @@
+services:
+  strata:
+    build: .
+    container_name: strata
+    image: strata:live
+    ports:
+      - 8080:8080
+    working_dir: /opt/strata
+    volumes:
+      - ./:/opt/strata
