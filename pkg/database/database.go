@@ -8,8 +8,8 @@ import (
 )
 
 type User struct {
-	Name     string
-	Password string
+	Name     string `json:"username"`
+	Password string `json:"password"`
 }
 
 type DbManager struct {
@@ -18,7 +18,7 @@ type DbManager struct {
 	context    context.Context
 }
 
-func NewDbMananger(connectionString string, ctx context.Context) (*DbManager, error) {
+func NewDbManager(connectionString string, ctx context.Context) (*DbManager, error) {
 	if len(connectionString) == 0 {
 		msg := "error creating new DbManager: empty connection string"
 		return nil, errors.New(msg)
@@ -56,6 +56,7 @@ func (d *DbManager) ConnectToDatabase() error {
 	return err
 }
 
+// Return a user based on username. Return error if no user found.
 func (d *DbManager) GetUserByUserName(name string) (User, error) {
 	user := User{}
 	var err error
@@ -70,4 +71,12 @@ func (d *DbManager) GetUserByUserName(name string) (User, error) {
 	}
 
 	return user, nil
+}
+
+// Insert user into the database. Expects the password to be hashed using the auth module.
+func (d *DbManager) InsertUser(username string, password string) error {
+	user := User{}
+	query := "INSERT INTO users (user_name, password_hash) VALUES ($1, $2) RETURNING user_name, password_hash"
+	err := d.Connection.QueryRow(d.context, query, username, password).Scan(&user.Name, &user.Password)
+	return err
 }
