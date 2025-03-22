@@ -6,13 +6,10 @@ import (
 	"github.com/TeamStrata/strata/pkg/database"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/hashicorp/go-set"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
 )
-
-const initialUserLimit = 20
 
 func main() {
 	server := gin.Default()
@@ -32,17 +29,20 @@ func main() {
 	}
 	conStr := os.Getenv("CONNECTION_STRING")
 
-	// Init database manager
+	// Initialize database manager
 	db, err := database.NewDbManager(conStr, context.Background())
 	if err != nil {
 		log.Fatalf("error initializing DB manager: %s", err.Error())
 	}
 
-	users := set.New[string](initialUserLimit)
+	// Initialize map for users and uuids
+	users := make(map[string]string)
 
 	// Endpoints
 	server.POST("/login", api.LoginHandler(db, users))
 	server.POST("/signup", api.SignUpHandler(db, users))
+	server.POST("/logout", api.LogoutHandler(users))
+	server.POST("/auth", api.AuthHandler(users))
 	server.GET("/ping", api.PingHandler)
 
 	err = server.Run(":8080")

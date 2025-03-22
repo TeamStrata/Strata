@@ -4,16 +4,16 @@ import (
 	"github.com/TeamStrata/strata/pkg/auth"
 	"github.com/TeamStrata/strata/pkg/database"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-set"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 const uuidTag = "uuid"
 
-// Authenticate user login.
-func LoginHandler(d *database.DbManager, users *set.Set[string]) gin.HandlerFunc {
+// Login, create and set UUID cookie, add user to the hash map
+func LoginHandler(d *database.DbManager, users map[string]string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		login := database.User{}
 		err := c.ShouldBindJSON(&login)
@@ -34,13 +34,22 @@ func LoginHandler(d *database.DbManager, users *set.Set[string]) gin.HandlerFunc
 			return
 		}
 
-		newId := addNewUUID(users)
-
-		c.JSON(http.StatusOK, gin.H{uuidTag: newId})
+		newId := addNewUUID(user.Name, users)
+		c.SetCookie(
+			uuidTag,
+			newId,
+			int(24*time.Hour.Seconds()),
+			"/",
+			"localhost",
+			true,
+			true,
+		)
+		c.Status(http.StatusOK)
 	}
 }
 
-func SignUpHandler(d *database.DbManager, users *set.Set[string]) gin.HandlerFunc {
+// Create a new user, hash the password, store user in database
+func SignUpHandler(d *database.DbManager, users map[string]string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user := database.User{}
 		err := c.ShouldBindJSON(&user)
@@ -61,8 +70,56 @@ func SignUpHandler(d *database.DbManager, users *set.Set[string]) gin.HandlerFun
 			return
 		}
 
-		newId := addNewUUID(users)
-		c.JSON(http.StatusOK, gin.H{uuidTag: newId})
+		newId := addNewUUID(user.Name, users)
+		c.SetCookie(
+			uuidTag,
+			newId,
+			int(24*time.Hour.Seconds()),
+			"/",
+			"localhost",
+			true,
+			true,
+		)
+		c.Status(http.StatusOK)
+	}
+}
+
+// Log out a user, delete their session UUID from the hash map
+func LogoutHandler(users map[string]string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := c.Cookie(uuidTag)
+		if err != nil {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+
+		_, exists := users[id]
+		if !exists {
+			c.Status(http.StatusNoContent)
+			return
+		}
+
+		delete(users, id)
+		c.Status(http.StatusOK)
+	}
+}
+
+// Check if the UUID cookie is set and valid
+func AuthHandler(users map[string]string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := c.Cookie(uuidTag)
+		if err != nil {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+
+		_, exists := users[id]
+		if !exists {
+			c.Status(http.StatusNoContent)
+			return
+		}
+
+		c.Status(http.StatusOK)
 	}
 }
 
@@ -73,12 +130,13 @@ func PingHandler(c *gin.Context) {
 	})
 }
 
-// Add UUID to active users
-func addNewUUID(users *set.Set[string]) string {
-	newUserID := uuid.NewString()
-	for !users.Insert(newUserID) {
-		newUserID = uuid.NewString()
+// Generate UUID if user does not already have one
+func addNewUUID(username string, users map[string]string) string {
+	newId := uuid.NewString()
+	for _, ok := users[newId]; ok; {
+		newId = uuid.NewString()
 	}
 
-	return newUserID
+	users[newId] = username
+	return newId
 }
