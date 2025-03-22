@@ -5,12 +5,14 @@ import { RouterLink, RouterView } from 'vue-router';
 </script>
 
 <template>
-    <div>
+    <div class="flex flex-row max-w-[1000px] mx-auto h-screen p-20">
         <!-- sidebar -->
-        <div>
+        <div class="bg-red-400 w-3xs h-full">
             <RouterLink to="/admin/users">Users</RouterLink>
         </div>
-        <!-- focus area -->
-        <RouterView></RouterView>
+        <div class="w-full h-full">
+            <!-- focus area -->
+            <RouterView></RouterView>
+        </div>
     </div>
 </template>
