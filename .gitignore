@@ -31,3 +31,5 @@ go.work.sum
 # Strata binary
 strata
 
+# Database content
+postgres/*
