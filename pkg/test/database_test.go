@@ -46,6 +46,8 @@ func Test_GetUserByUsername(t *testing.T) {
 	}
 
 	actualUser, err := db.GetUserByUserName(realUser.Name)
+	log.Print(realUser.Name)
+	log.Print(actualUser)
 	if err != nil {
 		t.Fatalf("error getting user by username: %s", err.Error())
 	}

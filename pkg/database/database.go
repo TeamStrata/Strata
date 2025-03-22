@@ -57,12 +57,13 @@ func (d *DbManager) ConnectToDatabase() error {
 }
 
 // Return a user based on username. Return error if no user found.
-func (d *DbManager) GetUserByUserName(name string) (User, error) {
+func (d *DbManager) GetUserByUserName(name string) (User, error) {	
 	user := User{}
 	var err error
 	if err = d.Connection.Ping(context.Background()); err != nil {
-		return User{}, nil
+		return User{}, err
 	}
+
 
 	query := "SELECT user_name, password_hash FROM users WHERE user_name = $1"
 	err = d.Connection.QueryRow(d.context, query, name).Scan(&user.Name, &user.Password)
