@@ -22,7 +22,12 @@ go.work.sum
 # env file
 .env
 
+
 # Editor files
 .vscode/*
 .idea/*
 [._]*.un~
+
+# Strata binary
+strata
+
